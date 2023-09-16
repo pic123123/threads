@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:threads/common/widgets/auth_button.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
 import 'package:threads/features/authentication/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -12,6 +14,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   final logoImage = 'assets/images/threads_black_logo.png';
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Map<String, String> formData = {};
@@ -23,13 +27,48 @@ class _SignupScreenState extends State<SignupScreen> {
 
   late String _email = "";
   late String _password = "";
+  bool _obscureText = true;
+
+  /// 비밀번호 입력값 초기화
+  void _onClearTap() {
+    _passwordController.clear();
+  }
+
+  /// 비밀번호 hide
+  void _toggleObscureText() {
+    setState(() {
+      _obscureText = !_obscureText;
+    });
+  }
+
+  /// 비밀번호 유효성 검사
+  bool _isPasswordValid() {
+    return _passwordController.text.isNotEmpty &&
+        _passwordController.text.length > 8 &&
+        _passwordController.text.length < 21;
+  }
 
   void _onSignup(context) async {
     if (_formKey.currentState != null) {
       if (_formKey.currentState!.validate()) {
         _formKey.currentState!.save();
 
-        print("signup");
+        try {
+          UserCredential userCredential =
+              await _auth.createUserWithEmailAndPassword(
+            email: formData['email']!,
+            password: formData['password']!,
+          );
+          print("signup successful");
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'weak-password') {
+            print('The password provided is too weak.');
+          } else if (e.code == 'email-already-in-use') {
+            print('The account already exists for that email.');
+          }
+        } catch (e) {
+          print(e);
+        }
       }
     }
   }
@@ -135,12 +174,34 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             Gaps.v16,
                             TextFormField(
+                              /// 비밀번호처럼 ***으로 보이게함
+                              obscureText: _obscureText,
                               controller: _passwordController,
                               decoration: InputDecoration(
-                                suffixIcon: _password.isNotEmpty
-                                    ? const Icon(Icons.check_circle,
-                                        color: Colors.green)
-                                    : null,
+                                suffix: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: _onClearTap,
+                                      child: FaIcon(
+                                        FontAwesomeIcons.solidCircleXmark,
+                                        color: Colors.grey.shade500,
+                                        size: Sizes.size20,
+                                      ),
+                                    ),
+                                    Gaps.h16,
+                                    GestureDetector(
+                                      onTap: _toggleObscureText,
+                                      child: FaIcon(
+                                        _obscureText
+                                            ? FontAwesomeIcons.eye
+                                            : FontAwesomeIcons.eyeSlash,
+                                        color: Colors.grey.shade500,
+                                        size: Sizes.size20,
+                                      ),
+                                    )
+                                  ],
+                                ),
                                 hintText: 'Password',
                                 enabledBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
@@ -164,6 +225,24 @@ class _SignupScreenState extends State<SignupScreen> {
                                   formData['password'] = newValue;
                                 }
                               },
+                            ),
+                            Gaps.v16,
+                            const Text(
+                              "Your password must have:",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Row(
+                              children: [
+                                FaIcon(
+                                  FontAwesomeIcons.circleCheck,
+                                  size: Sizes.size20,
+                                  color: _isPasswordValid()
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                                Gaps.h5,
+                                const Text("8 to 20 characters"),
+                              ],
                             ),
                             Gaps.v16,
                             GestureDetector(

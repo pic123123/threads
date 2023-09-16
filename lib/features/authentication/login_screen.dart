@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:threads/common/widgets/auth_button.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
@@ -12,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final logoImage = 'assets/images/threads_black_logo.png';
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Map<String, String> formData = {};
@@ -23,13 +26,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
   late String _email = "";
   late String _password = "";
+  bool _obscureText = true;
+
+  /// 비밀번호 입력값 초기화
+  void _onClearTap() {
+    _passwordController.clear();
+  }
+
+  /// 비밀번호 hide
+  void _toggleObscureText() {
+    setState(() {
+      _obscureText = !_obscureText;
+    });
+  }
+
+  /// 비밀번호 유효성 검사
+  bool _isPasswordValid() {
+    return _passwordController.text.isNotEmpty &&
+        _passwordController.text.length > 8 &&
+        _passwordController.text.length < 21;
+  }
 
   void _onLogin(context) async {
     if (_formKey.currentState != null) {
       if (_formKey.currentState!.validate()) {
         _formKey.currentState!.save();
 
-        print("Login");
+        try {
+          UserCredential userCredential =
+              await _auth.signInWithEmailAndPassword(
+            email: formData['email']!,
+            password: formData['password']!,
+          );
+          print("login successful");
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'user-not-found') {
+            print('No user found for that email.');
+          } else if (e.code == 'wrong-password') {
+            print('Wrong password provided for that user.');
+          }
+        } catch (e) {
+          print(e);
+        }
       }
     }
   }
@@ -136,11 +174,34 @@ class _LoginScreenState extends State<LoginScreen> {
                             Gaps.v16,
                             TextFormField(
                               controller: _passwordController,
+
+                              /// 비밀번호처럼 ***으로 보이게함
+                              obscureText: _obscureText,
                               decoration: InputDecoration(
-                                suffixIcon: _password.isNotEmpty
-                                    ? const Icon(Icons.check_circle,
-                                        color: Colors.green)
-                                    : null,
+                                suffix: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: _onClearTap,
+                                      child: FaIcon(
+                                        FontAwesomeIcons.solidCircleXmark,
+                                        color: Colors.grey.shade500,
+                                        size: Sizes.size20,
+                                      ),
+                                    ),
+                                    Gaps.h16,
+                                    GestureDetector(
+                                      onTap: _toggleObscureText,
+                                      child: FaIcon(
+                                        _obscureText
+                                            ? FontAwesomeIcons.eye
+                                            : FontAwesomeIcons.eyeSlash,
+                                        color: Colors.grey.shade500,
+                                        size: Sizes.size20,
+                                      ),
+                                    )
+                                  ],
+                                ),
                                 hintText: 'Password',
                                 enabledBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
