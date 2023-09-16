@@ -5,6 +5,7 @@ import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
 import 'package:threads/features/authentication/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:threads/features/home/home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -59,7 +60,16 @@ class _SignupScreenState extends State<SignupScreen> {
             email: formData['email']!,
             password: formData['password']!,
           );
-          print("signup successful");
+          print(userCredential);
+          // 로그인한 사용자의 정보가 존재하면 HomeScreen으로 이동합니다.
+          if (userCredential.user != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+            );
+          }
         } on FirebaseAuthException catch (e) {
           if (e.code == 'weak-password') {
             print('The password provided is too weak.');
@@ -67,7 +77,10 @@ class _SignupScreenState extends State<SignupScreen> {
             print('The account already exists for that email.');
           }
         } catch (e) {
-          print(e);
+          // 추가된 부분
+          // signInWithEmailAndPassword 메소드에서 던져진 모든 종류의 예외를 캐치합니다.
+          // e.toString()을 통해 오류 메시지 전체를 출력할 수 있습니다.
+          print('An error occurred while trying to log in: ${e.toString()}');
         }
       }
     }

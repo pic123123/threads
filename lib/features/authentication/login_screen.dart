@@ -5,6 +5,7 @@ import 'package:threads/common/widgets/auth_button.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
 import 'package:threads/features/authentication/signup_screen.dart';
+import 'package:threads/features/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,20 +54,35 @@ class _LoginScreenState extends State<LoginScreen> {
         _formKey.currentState!.save();
 
         try {
+          print("11");
           UserCredential userCredential =
               await _auth.signInWithEmailAndPassword(
             email: formData['email']!,
             password: formData['password']!,
           );
-          print("login successful");
+          print("22");
+          print(userCredential);
+          // 로그인한 사용자의 정보가 존재하면 HomeScreen으로 이동합니다.
+          if (userCredential.user != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+            );
+          }
         } on FirebaseAuthException catch (e) {
+          print(e.toString());
           if (e.code == 'user-not-found') {
             print('No user found for that email.');
           } else if (e.code == 'wrong-password') {
             print('Wrong password provided for that user.');
           }
         } catch (e) {
-          print(e);
+          // 추가된 부분
+          // signInWithEmailAndPassword 메소드에서 던져진 모든 종류의 예외를 캐치합니다.
+          // e.toString()을 통해 오류 메시지 전체를 출력할 수 있습니다.
+          print('An error occurred while trying to log in: ${e.toString()}');
         }
       }
     }
