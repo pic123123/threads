@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:threads/common/widgets/auth_button.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
+import 'package:threads/features/authentication/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +35,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onMoveSignupScreen(context) {
-    print("123");
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SignupScreen(),
+      ),
+    );
   }
 
   @override
