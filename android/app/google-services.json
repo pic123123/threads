@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "555861975003",
+    "project_id": "nomad-flutter",
+    "storage_bucket": "nomad-flutter.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:555861975003:android:55735e11b523b01bec11fe",
+        "android_client_info": {
+          "package_name": "com.example.nomad_flutter_twitter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDv3ePyauJlbbsBcHULXg5gjbXUzOX8CBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:555861975003:android:79bdd6f3c021ebb3ec11fe",
+        "android_client_info": {
+          "package_name": "com.example.threads"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDv3ePyauJlbbsBcHULXg5gjbXUzOX8CBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
