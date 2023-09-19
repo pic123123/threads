@@ -5,7 +5,7 @@ import 'package:threads/common/widgets/auth_button.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
 import 'package:threads/features/authentication/signup_screen.dart';
-import 'package:threads/features/home/home_screen.dart';
+import 'package:threads/features/main_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,20 +54,26 @@ class _LoginScreenState extends State<LoginScreen> {
         _formKey.currentState!.save();
 
         try {
-          print("11");
           UserCredential userCredential =
               await _auth.signInWithEmailAndPassword(
             email: formData['email']!,
             password: formData['password']!,
           );
-          print("22");
-          print(userCredential);
           // 로그인한 사용자의 정보가 존재하면 HomeScreen으로 이동합니다.
           if (userCredential.user != null) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const MainNavigationScreen(),
+              ),
+
+              ///이건 이전 기록이 있는 route를 모두 유지할지 말지 여부
+              (route) => false,
+            );
+
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
+                builder: (context) => const MainNavigationScreen(),
               ),
             );
           }
