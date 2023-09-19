@@ -63,7 +63,6 @@ class _PostScreenState extends State<PostScreen> {
   final ImagePicker picker = ImagePicker(); //ImagePicker 초기화
   List<XFile>? _images; // Change from XFile? to List<XFile>
 
-  ///최종 저장
   void _onSave() async {
     // Upload each image and get their download URLs
     List<String> imageUrls = [];
@@ -78,32 +77,18 @@ class _PostScreenState extends State<PostScreen> {
       imageUrls.add(imageUrl);
     }
 
-//    Post newPost = Post(
-//      userId : ... ,
-//      name : ... ,
-//      content : _contentsController.text ,
-//      profileImg : ... ,
-//      img : imageUrls ,
-//  );
-  }
+    Post newPost = Post(
+      userId: 123, // Your Firebase UUID
+      name: "User Name", // Temporary user name
+      content: _contentsController.text,
+      profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
+      img: imageUrls,
+    );
 
-  ///파이어베이스에 게시글 및 이미지 저장
-  Future<void> savePost(Post post) async {
-    // Create a reference to the location you want to upload to in firebase
-    Reference storageReference = FirebaseStorage.instance
-        .ref()
-        .child('${DateTime.now().millisecondsSinceEpoch}');
-
-    // Upload file to firebase
-    // await storageReference.putFile(post.img).whenComplete(() => null);
-
-    // Get the download URL of uploaded image
-    String imageUrl = await storageReference.getDownloadURL();
-
-    // Save post data with imageUrl to firestore
     CollectionReference posts = FirebaseFirestore.instance.collection('posts');
+    await posts.add(newPost.toJson());
 
-    await posts.add(post.toJson());
+    print("Saved post");
   }
 
   Future getImage() async {
@@ -221,12 +206,21 @@ class _PostScreenState extends State<PostScreen> {
                 cursorColor: Theme.of(context).primaryColor,
               ),
               if (_images != null)
-                for (var image in _images!)
-                  Image.file(
-                    File(image.path),
-                    width: 200,
-                    height: 150,
+                SizedBox(
+                  height: 150,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _images!.length,
+                    itemBuilder: (context, index) {
+                      return Image.file(
+                        File(_images![index].path),
+                        width: 200,
+                        height: 150,
+                        fit: BoxFit.cover,
+                      );
+                    },
                   ),
+                ),
               Gaps.v10,
               GestureDetector(
                 onTap: () => _onSave(),
