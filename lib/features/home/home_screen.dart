@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Post {
   final int userId;
@@ -17,7 +19,29 @@ class Post {
     required this.profileImg,
     required this.img,
   });
+
+  /// DocumentSnapshot은 Firebase Firestore에서 사용하는 클래스입니다.
+  /// Firestore 데이터베이스에서 하나의 문서(document)를 나타내며,
+  /// 이 문서는 키-값 쌍으로 이루어진 데이터를 포함하고 있습니다.
+  /// factory constructor to create a Post from a firestore document
+  factory Post.fromDocument(DocumentSnapshot doc) {
+    return Post(
+      userId: doc['userId'],
+      name: doc['name'],
+      content: doc['content'],
+      profileImg: doc['profileImg'],
+      img: List<String>.from(doc['img']),
+    );
+  }
 }
+
+// provider for the stream of posts
+final postsProvider = StreamProvider<List<Post>>((ref) async* {
+  FirebaseFirestore db = FirebaseFirestore.instance;
+
+  yield* db.collection('posts').snapshots().map((snapshot) =>
+      snapshot.docs.map((doc) => Post.fromDocument(doc)).toList());
+});
 
 /// dumyy data
 List<Post> Posts = [
@@ -51,158 +75,144 @@ List<Post> Posts = [
   ),
 ];
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-//ListView는 각 항목의 높이가 다를 때 유용하며, GridView는 모든 항목이 동일한 크기를 가질 때 잘 작동합니다.
-class _HomeScreenState extends State<HomeScreen> {
-  ///comments 아이콘 누르면 실행되는 함수
-  void _onCommentsTap(BuildContext context) async {
-    // ///밑에서부터 올라오는 모달창 (모달밖은 저절로 회색으로 흐려짐)
-    // await showModalBottomSheet(
-    //   context: context,
-
-    //   /// bottom sheet의 사이즈를 바꿀 수 있게 해줌, (listView를 사용할거면 true)
-    //   isScrollControlled: true,
-    //   backgroundColor: Colors.transparent,
-    //   builder: (context) => const PostBottomSheet(),
-    // );
-  }
-
   final logoImage = 'assets/images/twitter_logo.png';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    AsyncValue<List<Post>> postsAsyncValue = ref.watch(postsProvider);
+
     return Scaffold(
       body: SafeArea(
-        child: ListView.builder(
-          itemCount: Posts.length,
-          itemBuilder: (context, index) {
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(
-                  Sizes.size10,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundImage:
-                              NetworkImage(Posts[index].profileImg),
-                        ),
-                        Gaps.h10,
-                        Column(
-                          //Column은 기본적인 정렬방식이 세로축 중앙이다.
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  Posts[index].name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Gaps.h10,
-                                FaIcon(
-                                  FontAwesomeIcons.solidCircleCheck,
-                                  size: Sizes.size20,
-                                  color: Colors.blue[400],
-                                ),
-                              ],
-                            ),
-                            Gaps.v10,
-                            Text(
-                              Posts[index].content,
-                            ),
-                          ],
-                        ),
-
-                        const Spacer(), // This will take up all remaining space in the row
-                        Gaps.h10,
-                        const Text(
-                          "2h",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w300,
+        child: postsAsyncValue.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => Center(child: Text(error.toString())),
+          data: (List<Post> posts) => ListView.builder(
+            itemCount: Posts.length,
+            itemBuilder: (context, index) {
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(
+                    Sizes.size10,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundImage:
+                                NetworkImage(Posts[index].profileImg),
                           ),
-                        ),
-                        Gaps.h10,
-                        GestureDetector(
-                          onTap: () => _onCommentsTap(context),
-                          child: const FaIcon(
-                            FontAwesomeIcons.ellipsis,
-                          ),
-                        ),
-
-                        Gaps.h10,
-                      ],
-                    ),
-                    Gaps.v10,
-                    if (Posts[index].img.isNotEmpty)
-                      AspectRatio(
-                        aspectRatio: 2 / 1,
-                        child: Posts[index].img.length > 1
-                            ? ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: Posts[index].img.length,
-                                itemBuilder: (context, i) => Padding(
-                                  padding: const EdgeInsets.only(right: 10.0),
-                                  child: AspectRatio(
-                                    aspectRatio: 2 / 1,
-                                    child: Image.network(Posts[index].img[i],
-                                        fit: BoxFit.fill),
+                          Gaps.h10,
+                          Column(
+                            //Column은 기본적인 정렬방식이 세로축 중앙이다.
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    Posts[index].name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : Image.network(Posts[index].img[0],
-                                fit: BoxFit.fill),
+                                  Gaps.h10,
+                                  FaIcon(
+                                    FontAwesomeIcons.solidCircleCheck,
+                                    size: Sizes.size20,
+                                    color: Colors.blue[400],
+                                  ),
+                                ],
+                              ),
+                              Gaps.v10,
+                              Text(
+                                Posts[index].content,
+                              ),
+                            ],
+                          ),
+
+                          const Spacer(), // This will take up all remaining space in the row
+                          Gaps.h10,
+                          const Text(
+                            "2h",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                          Gaps.h10,
+                          GestureDetector(
+                            // onTap: () => _onCommentsTap(context),
+                            child: const FaIcon(
+                              FontAwesomeIcons.ellipsis,
+                            ),
+                          ),
+
+                          Gaps.h10,
+                        ],
                       ),
-                    Gaps.v10,
-                    Row(
-                      children: const [
-                        FaIcon(
-                          FontAwesomeIcons.heart,
+                      Gaps.v10,
+                      if (Posts[index].img.isNotEmpty)
+                        AspectRatio(
+                          aspectRatio: 2 / 1,
+                          child: Posts[index].img.length > 1
+                              ? ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: Posts[index].img.length,
+                                  itemBuilder: (context, i) => Padding(
+                                    padding: const EdgeInsets.only(right: 10.0),
+                                    child: AspectRatio(
+                                      aspectRatio: 2 / 1,
+                                      child: Image.network(Posts[index].img[i],
+                                          fit: BoxFit.fill),
+                                    ),
+                                  ),
+                                )
+                              : Image.network(Posts[index].img[0],
+                                  fit: BoxFit.fill),
                         ),
-                        Gaps.h10,
-                        FaIcon(
-                          FontAwesomeIcons.comment,
-                        ),
-                        Gaps.h10,
-                        FaIcon(
-                          FontAwesomeIcons.recycle,
-                        ),
-                        Gaps.h10,
-                        FaIcon(
-                          FontAwesomeIcons.paperPlane,
-                        )
-                      ],
-                    ),
-                    Gaps.v10,
-                    Row(
-                      children: const [
-                        Text(
-                          "8 replies",
-                          style: TextStyle(fontWeight: FontWeight.w200),
-                        ),
-                        Text("."),
-                        Text(
-                          "74 likes",
-                          style: TextStyle(fontWeight: FontWeight.w200),
-                        )
-                      ],
-                    ),
-                    Gaps.v5,
-                  ],
+                      Gaps.v10,
+                      Row(
+                        children: const [
+                          FaIcon(
+                            FontAwesomeIcons.heart,
+                          ),
+                          Gaps.h10,
+                          FaIcon(
+                            FontAwesomeIcons.comment,
+                          ),
+                          Gaps.h10,
+                          FaIcon(
+                            FontAwesomeIcons.recycle,
+                          ),
+                          Gaps.h10,
+                          FaIcon(
+                            FontAwesomeIcons.paperPlane,
+                          )
+                        ],
+                      ),
+                      Gaps.v10,
+                      Row(
+                        children: const [
+                          Text(
+                            "8 replies",
+                            style: TextStyle(fontWeight: FontWeight.w200),
+                          ),
+                          Text("."),
+                          Text(
+                            "74 likes",
+                            style: TextStyle(fontWeight: FontWeight.w200),
+                          )
+                        ],
+                      ),
+                      Gaps.v5,
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

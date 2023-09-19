@@ -1,8 +1,50 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:threads/common/widgets/form_button.dart';
 import 'package:threads/constants/gaps.dart';
 import 'package:threads/constants/sizes.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+
+class Post {
+  final int userId;
+  final String name;
+  final String content;
+  final String profileImg;
+  final List<String> img;
+
+  Post({
+    required this.userId,
+    required this.name,
+    required this.content,
+    required this.profileImg,
+    required this.img,
+  });
+
+  factory Post.fromDocument(DocumentSnapshot doc) {
+    return Post(
+      userId: doc['userId'],
+      name: doc['name'],
+      content: doc['content'],
+      profileImg: doc['profileImg'],
+      img: List<String>.from(doc['img']),
+    );
+  }
+
+//이 메소드는 Firestore에 데이터를 저장할 때 사용됩니다.
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'name': name,
+      'content': content,
+      'profileImg': profileImg,
+      'img': img
+    };
+  }
+}
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key});
@@ -17,29 +59,60 @@ class _PostScreenState extends State<PostScreen> {
 
   String _content = "";
 
-  void _onSave() {
-    print("123");
+  XFile? _image; //이미지를 담을 변수 선언
+  final ImagePicker picker = ImagePicker(); //ImagePicker 초기화
+  List<XFile>? _images; // Change from XFile? to List<XFile>
+
+  ///최종 저장
+  void _onSave() async {
+    // Upload each image and get their download URLs
+    List<String> imageUrls = [];
+
+    for (var image in _images!) {
+      Reference storageReference = FirebaseStorage.instance
+          .ref()
+          .child('${DateTime.now().millisecondsSinceEpoch}');
+      await storageReference.putFile(File(image.path)).whenComplete(() => null);
+      String imageUrl = await storageReference.getDownloadURL();
+
+      imageUrls.add(imageUrl);
+    }
+
+//    Post newPost = Post(
+//      userId : ... ,
+//      name : ... ,
+//      content : _contentsController.text ,
+//      profileImg : ... ,
+//      img : imageUrls ,
+//  );
   }
 
-  File? _image; //이미지를 담을 변수 선언
+  ///파이어베이스에 게시글 및 이미지 저장
+  Future<void> savePost(Post post) async {
+    // Create a reference to the location you want to upload to in firebase
+    Reference storageReference = FirebaseStorage.instance
+        .ref()
+        .child('${DateTime.now().millisecondsSinceEpoch}');
 
-  // void _onMoveCameraScreen(BuildContext context) async {
-  //   final XFile? selectedImage = await showModalBottomSheet(
-  //     context: context,
+    // Upload file to firebase
+    // await storageReference.putFile(post.img).whenComplete(() => null);
 
-  //     /// bottom sheet의 사이즈를 바꿀 수 있게 해줌, (listView를 사용할거면 true)
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.transparent,
-  //     builder: (context) => const CameraBottomSheet(),
-  //   );
-  //   if (selectedImage != null) {
-  //     // Use your image here.
-  //     print("Selected Image Path : ${selectedImage.path}");
-  //     setState(() {
-  //       _image = File(selectedImage.path);
-  //     });
-  //   }
-  // }
+    // Get the download URL of uploaded image
+    String imageUrl = await storageReference.getDownloadURL();
+
+    // Save post data with imageUrl to firestore
+    CollectionReference posts = FirebaseFirestore.instance.collection('posts');
+
+    await posts.add(post.toJson());
+  }
+
+  Future getImage() async {
+    final List<XFile> pickedFiles =
+        await picker.pickMultiImage(); // Use pickMultiImage()
+    setState(() {
+      _images = pickedFiles;
+    });
+  }
 
   @override
   Future<void> dispose() async {
@@ -129,13 +202,13 @@ class _PostScreenState extends State<PostScreen> {
                     vertical: Sizes.size10,
                     horizontal: Sizes.size10,
                   ),
-                  // prefixIcon: const IconButton(
-                  //   icon: FaIcon(
-                  //     FontAwesomeIcons.paperclip,
-                  //     size: Sizes.size20,
-                  //   ),
-                  //   // onPressed: () => _onMoveCameraScreen(context),
-                  // ),
+                  prefixIcon: IconButton(
+                    icon: const FaIcon(
+                      FontAwesomeIcons.paperclip,
+                      size: Sizes.size20,
+                    ),
+                    onPressed: () => getImage(),
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(Sizes.size4),
                     borderSide: const BorderSide(color: Colors.transparent),
@@ -147,21 +220,20 @@ class _PostScreenState extends State<PostScreen> {
                 ),
                 cursorColor: Theme.of(context).primaryColor,
               ),
-              _image == null
-                  ? const Text('')
-                  : Image.file(
-                      _image!,
-                      width: 200, // 이미지의 원하는 너비를 설정하세요.
-                      height: 150, // 이미지의 원하는 높이를 설정하세요.
-                      fit: BoxFit.cover,
-                    ),
+              if (_images != null)
+                for (var image in _images!)
+                  Image.file(
+                    File(image.path),
+                    width: 200,
+                    height: 150,
+                  ),
               Gaps.v10,
-              // GestureDetector(
-              //   onTap: () => _onSave(),
-              //   child: FormButton(
-              //     disabled: false,
-              //   ),
-              // )
+              GestureDetector(
+                onTap: () => _onSave(),
+                child: const FormButton(
+                  disabled: false,
+                ),
+              )
             ],
           ),
         ),
