@@ -88,7 +88,13 @@ class _PostScreenState extends State<PostScreen> {
     CollectionReference posts = FirebaseFirestore.instance.collection('posts');
     await posts.add(newPost.toJson());
 
-    print("Saved post");
+    // Show a success message to the user.
+    const snackBar = SnackBar(content: Text('성공적으로 게시되었습니다.'));
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    // Navigate back to the home screen.
+    Navigator.pop(context);
   }
 
   Future getImage() async {

@@ -35,45 +35,50 @@ class Post {
   }
 }
 
-// provider for the stream of posts
 final postsProvider = StreamProvider<List<Post>>((ref) async* {
   FirebaseFirestore db = FirebaseFirestore.instance;
 
-  yield* db.collection('posts').snapshots().map((snapshot) =>
-      snapshot.docs.map((doc) => Post.fromDocument(doc)).toList());
+  yield* db.collection('posts').snapshots().map((snapshot) {
+    var posts = snapshot.docs.map((doc) {
+      print("Doc data: ${doc.data()}"); // print the document data
+      return Post.fromDocument(doc);
+    }).toList();
+    print("Posts: $posts"); // print the list of posts
+    return posts;
+  });
 });
 
-/// dumyy data
-List<Post> Posts = [
-  Post(
-    userId: 1,
-    name: "joker",
-    content: "I like you",
-    profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
-    img: [],
-  ),
-  Post(
-    userId: 2,
-    name: "bbong",
-    content: "I like you, too",
-    profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
-    // profileImg: "",
-    img: [
-      "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80",
-      "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80"
-    ],
-  ),
-  Post(
-    userId: 3,
-    name: "seul",
-    content: "I like you, all",
-    profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
-    // profileImg: "",
-    img: [
-      "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80",
-    ],
-  ),
-];
+// /// dumyy data
+// List<Post> Posts = [
+//   Post(
+//     userId: 1,
+//     name: "joker",
+//     content: "I like you",
+//     profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
+//     img: [],
+//   ),
+//   Post(
+//     userId: 2,
+//     name: "bbong",
+//     content: "I like you, too",
+//     profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
+//     // profileImg: "",
+//     img: [
+//       "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80",
+//       "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80"
+//     ],
+//   ),
+//   Post(
+//     userId: 3,
+//     name: "seul",
+//     content: "I like you, all",
+//     profileImg: "https://avatars.githubusercontent.com/u/40009719?v=4",
+//     // profileImg: "",
+//     img: [
+//       "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80",
+//     ],
+//   ),
+// ];
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -89,7 +94,7 @@ class HomeScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(child: Text(error.toString())),
           data: (List<Post> posts) => ListView.builder(
-            itemCount: Posts.length,
+            itemCount: posts.length,
             itemBuilder: (context, index) {
               return Card(
                 child: Padding(
@@ -102,8 +107,14 @@ class HomeScreen extends ConsumerWidget {
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundImage:
-                                NetworkImage(Posts[index].profileImg),
+                            backgroundImage: NetworkImage(
+                              (posts[index].profileImg ??
+                                  'https://avatars.githubusercontent.com/u/40009719?v=4'),
+                            ),
+                            // backgroundImage: NetworkImage(
+                            //   posts[index].profileImg ??
+                            //   "https://images.unsplash.com/photo-1673844969019-c99b0c933e90?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1480&q=80",
+                            // ),
                           ),
                           Gaps.h10,
                           Column(
@@ -113,7 +124,7 @@ class HomeScreen extends ConsumerWidget {
                               Row(
                                 children: [
                                   Text(
-                                    Posts[index].name,
+                                    posts[index].name,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -128,7 +139,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               Gaps.v10,
                               Text(
-                                Posts[index].content,
+                                posts[index].content,
                               ),
                             ],
                           ),
@@ -153,23 +164,23 @@ class HomeScreen extends ConsumerWidget {
                         ],
                       ),
                       Gaps.v10,
-                      if (Posts[index].img.isNotEmpty)
+                      if (posts[index].img.isNotEmpty)
                         AspectRatio(
                           aspectRatio: 2 / 1,
-                          child: Posts[index].img.length > 1
+                          child: posts[index].img.length > 1
                               ? ListView.builder(
                                   scrollDirection: Axis.horizontal,
-                                  itemCount: Posts[index].img.length,
+                                  itemCount: posts[index].img.length,
                                   itemBuilder: (context, i) => Padding(
                                     padding: const EdgeInsets.only(right: 10.0),
                                     child: AspectRatio(
                                       aspectRatio: 2 / 1,
-                                      child: Image.network(Posts[index].img[i],
+                                      child: Image.network(posts[index].img[i],
                                           fit: BoxFit.fill),
                                     ),
                                   ),
                                 )
-                              : Image.network(Posts[index].img[0],
+                              : Image.network(posts[index].img[0],
                                   fit: BoxFit.fill),
                         ),
                       Gaps.v10,
