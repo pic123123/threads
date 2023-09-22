@@ -4,6 +4,7 @@ import 'package:threads/constants/sizes.dart';
 import 'package:threads/features/home/home_screen.dart';
 import 'package:threads/features/nav.tab.dart';
 import 'package:threads/features/post/post_screen.dart';
+import 'package:threads/features/search/search_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({
@@ -72,7 +73,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           Offstage(
             offstage: _selectedIndex != 1,
-            // child: const SearchScreen(),
+            child: const SearchScreen(),
           ),
           Offstage(
             offstage: _selectedIndex != 2,

@@ -21,9 +21,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Map<String, String> formData = {};
 
   final TextEditingController _emailController =
-      TextEditingController(text: "");
+      TextEditingController(text: "test123@gmail.com");
   final TextEditingController _passwordController =
-      TextEditingController(text: "");
+      TextEditingController(text: "1a2a3a!!!");
 
   late String _email = "";
   late String _password = "";
