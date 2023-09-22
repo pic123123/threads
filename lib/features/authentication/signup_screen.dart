@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:threads/common/widgets/auth_button.dart';
@@ -6,6 +7,43 @@ import 'package:threads/constants/sizes.dart';
 import 'package:threads/features/authentication/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:threads/features/home/home_screen.dart';
+
+class User {
+  final String userId;
+  final String name;
+  final String content;
+  final String profileImg;
+  final String followers;
+
+  User({
+    required this.userId,
+    required this.name,
+    required this.content,
+    required this.profileImg,
+    required this.followers,
+  });
+
+  factory User.fromDocument(DocumentSnapshot doc) {
+    return User(
+      userId: doc['userId'],
+      name: doc['name'],
+      content: doc['content'],
+      profileImg: doc['profileImg'],
+      followers: doc['followers'],
+    );
+  }
+
+//이 메소드는 Firestore에 데이터를 저장할 때 사용됩니다.
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'name': name,
+      'content': content,
+      'profileImg': profileImg,
+      'followers': followers,
+    };
+  }
+}
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -61,8 +99,18 @@ class _SignupScreenState extends State<SignupScreen> {
             password: formData['password']!,
           );
           print(userCredential);
-          // 로그인한 사용자의 정보가 존재하면 HomeScreen으로 이동합니다.
+          // 로그인한 사용자의 정보가 존재하면 Firestore Database에 기타 정보 저장
           if (userCredential.user != null) {
+            User newUser = User(
+              userId: userCredential.user!.uid, // Your Firebase UUID
+              name: "", // Temporary user name
+              content: "",
+              followers: "",
+              profileImg: "",
+            );
+            CollectionReference users =
+                FirebaseFirestore.instance.collection('users');
+            await users.add(newUser.toJson());
             Navigator.push(
               context,
               MaterialPageRoute(
